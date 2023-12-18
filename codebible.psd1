@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -63,13 +63,13 @@ RequiredModules = @('ExchangeOnlineManagement','ActiveDirectory')
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+FormatsToProcess = @('.\FolderSize\FolderSize.format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('ForwardRules\ForwardRules.ps1','RepairWindows\RepairWindows.ps1')
+NestedModules = @('ForwardRules\ForwardRules.ps1','RepairWindows\RepairWindows.ps1','FolderSize\FolderSize.psm1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Get-ForwardRules','Repair-WindowsInstall')
+FunctionsToExport = @('Get-ForwardRules','Repair-WindowsInstall','Set-MailNickname','Get-MailboxSize','Get-FolderSize')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
