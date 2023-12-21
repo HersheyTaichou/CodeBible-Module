@@ -90,8 +90,9 @@ Original:       https://github.com/garrett-wood/Public/blob/master/XKCD%20Passwo
 CHANGELOG
 - VERSION 1.0 - LAST MODIFIED: 2019.02.16
   - Original version from https://www.reddit.com/r/PowerShell/comments/arccbg/update_xkcd_password_generator/
-- VERSION 2.0 - LAST MODIFIED: 2023-12-20
+- VERSION 2.0 - LAST MODIFIED: 2023-12-21
   - Expands the script to have more flexibility and more closely match the version found on XKPASSWD, but implimented entirely in PowerShell
+  - Adds the presets from XKPASSWD with matching settings
 #>
 function New-SecurePassword {
     [cmdletBinding(DefaultParameterSetName = 'Default')]
