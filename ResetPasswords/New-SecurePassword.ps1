@@ -71,7 +71,7 @@ New-SecurePassword
 Just running the command will generate a password with the default settings.
 
 .EXAMPLE
-New-SecurePassword -WordCount 3 -MinWordLength 4 -MaxWordLength 4 -Transformations RandomCapitalise -Separator @("-","+","=",".","*","_","|","~",",") -FrontPaddingDigits 0 -EndPaddingDigits 0 -FrontPaddingSymbols 1 -EndPaddingSymbols 1 -PaddingSymbols @("!","@","$","%","^","&","*","+","=",":","|","~","?") -Verbose
+New-SecurePassword -WordCount 3 -MinimumWordLength 4 -MaximumWordLength 4 -Transformations RandomCapitalise -Separator @("-","+","=",".","*","_","|","~",",") -FrontPaddingDigits 0 -EndPaddingDigits 0 -FrontPaddingSymbols 1 -EndPaddingSymbols 1 -PaddingSymbols @("!","@","$","%","^","&","*","+","=",":","|","~","?") -Verbose
 
 VERBOSE: Dictionary contains 370222 words.
 VERBOSE: 7197 potential words selected.
@@ -247,6 +247,7 @@ function New-SecurePassword {
             $EndPaddingSymbols = 0
         }
         
+        # Print out the current settings in a readable format
         $Settings = "SETTINGS:"
         $Settings += "`n`t"
         $Settings += "WORDS: $($WordCount) words between $($MinWordLength) and $($MaxWordLength) letters."
@@ -337,6 +338,7 @@ function New-SecurePassword {
         6. Select padding symbols
         #>
 
+        # Filter the dictionary down to just the words that fit within the selected length
         if ($MinWordLength -le $MaxWordLength) {
             if (($MinWordLength -lt 24) -and $MaxWordLength -lt 24){
                 [string[]]$FilteredDictionary = $Dictionary | Where-Object {($_.Length -ge $MinWordLength) -and ($_.Length -le $MaxWordLength)}
@@ -350,6 +352,7 @@ function New-SecurePassword {
 
         Write-Verbose "Dictionary contains $($Dictionary.Count) words, which was filtered to $($FilteredDictionary.Count) potential words."
 
+        # Display password structure and length
         if ($FrontPaddingSymbols) {
             For( $C=1; $C -le $FrontPaddingSymbols; $C++ ) {
                 $PWStructure += '[P]'
@@ -408,7 +411,7 @@ function New-SecurePassword {
 
         # Select a random padding symbol from the provided array
         if ($PaddingSymbols.Count -gt 1) {
-            $PadSymbol = $PaddingSymbols[(Get-RandomInt -Min 0 -Max ($PaddingSymbols.Count - 1))]
+            $PadSymbol = $PaddingSymbols[(Get-RandomInt -Minimum 0 -Maximum ($PaddingSymbols.Count - 1))]
         } elseif ($PaddingSymbols.Count -eq 1) {
             $PadSymbol = $PaddingSymbols[0]
         } else {
@@ -417,7 +420,7 @@ function New-SecurePassword {
         
         # Select a random separator character from the provided array
         if ($Separator.Count -gt 1) {
-            $SeparatorChar = $Separator[(Get-RandomInt -Min 0 -Max ($Separator.Count - 1))]
+            $SeparatorChar = $Separator[(Get-RandomInt -Minimum 0 -Maximum ($Separator.Count - 1))]
         } elseif ($Separator.Count -eq 1) {
             $SeparatorChar = $Separator[0]
         } else {
@@ -433,7 +436,7 @@ function New-SecurePassword {
         # Add padding digits to the beginning of the password, if included
         if ($FrontPaddingDigits) {
             For( $C=1; $C -le $FrontPaddingDigits; $C++ ) {
-                $SecurePassword += Get-RandomInt -Min 0 -Max 9
+                $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
             }
         }
 
@@ -444,7 +447,7 @@ function New-SecurePassword {
 
         # Add the words to the password, using the selected transformation, separated by the separator characters, if applicable
         For( $C=1; $C -le $WordCount; $C++ ) {
-            $CurrentWord = $FilteredDictionary[(Get-RandomInt -Min 0 -Max ($FilteredDictionary.Count - 1))]
+            $CurrentWord = $FilteredDictionary[(Get-RandomInt -Minimum 0 -Maximum ($FilteredDictionary.Count - 1))]
             If ($Transformations -eq "None") {
                 $SecurePassword += $CurrentWord
             } elseif ($Transformations -eq "alternatingWORDcase") {
@@ -462,7 +465,7 @@ function New-SecurePassword {
             } elseif ($Transformations -eq "UPPERCASE") {
                 $SecurePassword += $CurrentWord.ToUpper()
             } elseif ($Transformations -eq "RandomCapitalise") {
-                if ((Get-RandomInt -Min 0) % 2) {
+                if ((Get-RandomInt -Minimum 0) % 2) {
                     $SecurePassword += $CurrentWord.ToUpper()
                 } else {
                     $SecurePassword += $CurrentWord.ToLower()
@@ -473,7 +476,7 @@ function New-SecurePassword {
             }
         }
 
-        # Place a separator between the words and the end padding digits/symbols, if applicable
+        # Place a separator between the words and the end padding digits, if applicable
         if ($Separator -and $EndPaddingDigits) {
             $SecurePassword += $SeparatorChar
         }
@@ -481,7 +484,7 @@ function New-SecurePassword {
         # Add padding digits to the end of the password, if included
         if ($EndPaddingDigits) {
             For( $C=1; $C -le $EndPaddingDigits; $C++ ) {
-                $SecurePassword += Get-RandomInt -Min 0 -Max 9
+                $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
             }
         }
 
@@ -491,6 +494,7 @@ function New-SecurePassword {
                 $SecurePassword += $PadSymbol
             }
         }
+        # If adaptive padding was selected, add the padding symbol to the end until the final length is reached
         if (($AdaptivePaddingLength) -and ($SecurePassword.Length -lt $AdaptivePaddingLength)) {
             $SymbolsToAdd = $AdaptivePaddingLength - $SecurePassword.Length
             For( $C=1; $C -le $SymbolsToAdd; $C++ ) {
@@ -519,14 +523,14 @@ The minimum number to consider. Defaults to the minimum value for an integer (-2
 The maximum number to consider. Defaults to the maximum value for an integer (2147483647)
 
 .EXAMPLE
-Get-RandomInt -Min 0 -Max 100
+Get-RandomInt -Minimum 0 -Maximum 100
 
 81
 
 This example generates a random number between 0 and 100
 
 .EXAMPLE
-Get-RandomInt -Min 0
+Get-RandomInt -Minimum 0
 
 1461304439
 
@@ -546,15 +550,16 @@ function Get-RandomInt {
     [CmdletBinding()]
     param (
         # The lowest number to include. Defaults to the lowest possible number
-        [Parameter()][int]$Min = [Int]::MinValue,
+        [Parameter()][int]$Minimum = [Int]::MinValue,
         
         # the highest number to include
-        [Parameter()][int]$Max = [Int]::MaxValue
+        [Parameter()][int]$Maximum = [Int]::MaxValue
     )
     
     process {
-        if ($Min -lt $Max) {
-            $Return = [System.Security.Cryptography.RandomNumberGenerator]::GetInt32($Min,$Max)
+        # Check to make sure minimum is less then maximum, then get a random number
+        if ($Minimum -lt $Maximum) {
+            $Return = [System.Security.Cryptography.RandomNumberGenerator]::GetInt32($Minimum,$Max)
         } else {
             Write-Warning 'Minimum length must be less than Maximum length'
             return -1
