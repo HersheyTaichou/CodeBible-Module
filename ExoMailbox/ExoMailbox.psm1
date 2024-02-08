@@ -38,7 +38,7 @@ function Get-AllMailboxRules {
                     foreach ($rule in $Rules) {
                         $ActivityB = "Processing " + $rule.DisplayName
                         $CounterB ++
-                        Write-Progress -Id 0 -Activity $ActivityB -PercentComplete (($CounterB / $Rules.count) * 100)
+                        Write-Progress -Id 1 -Activity $ActivityB -PercentComplete (($CounterB / $Rules.count) * 100) -ParentId 0
                         $Properties = [ordered]@{
                             'PrimarySmtpAddress' = $Mailbox.PrimarySmtpAddress
                             'DisplayName' = $Mailbox.DisplayName

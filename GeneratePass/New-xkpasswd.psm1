@@ -1,7 +1,9 @@
 #XKCD PASSWORD GENERATOR
 
 #Load example dictionary file at import
-. $PSScriptRoot\dictionary.ps1
+#. $PSScriptRoot\dictionary.ps1
+
+#Write-Host $PSScriptRoot
 
 <#
 .SYNOPSIS
@@ -64,14 +66,14 @@ If an empty array is passed, it will default to a -
 This parameter is used to define an array of strings that will be used to select the words in the password. It defaults to the $ExampleDictionary array from the dot sourced Dictionary.ps1 file
 
 .EXAMPLE
-New-SecurePassword
+New-xkpasswd
 
 &&63&mohel&coopers&hibbin&65&&
 
 Just running the command will generate a password with the default settings.
 
 .EXAMPLE
-New-SecurePassword -WordCount 3 -MinimumWordLength 4 -MaximumWordLength 4 -Transformations RandomCapitalise -Separator @("-","+","=",".","*","_","|","~",",") -FrontPaddingDigits 0 -EndPaddingDigits 0 -FrontPaddingSymbols 1 -EndPaddingSymbols 1 -PaddingSymbols @("!","@","$","%","^","&","*","+","=",":","|","~","?") -Verbose
+New-xkpasswd -WordCount 3 -MinimumWordLength 4 -MaximumWordLength 4 -Transformations RandomCapitalise -Separator @("-","+","=",".","*","_","|","~",",") -FrontPaddingDigits 0 -EndPaddingDigits 0 -FrontPaddingSymbols 1 -EndPaddingSymbols 1 -PaddingSymbols @("!","@","$","%","^","&","*","+","=",":","|","~","?") -Verbose
 
 VERBOSE: Dictionary contains 370222 words.
 VERBOSE: 7197 potential words selected.
@@ -85,7 +87,7 @@ This example will generate a password using the WEB16 settings from xkpasswd.net
 RELATED LINKS
 XKCD Comic 936: https://xkcd.com/936/
 XKPasswd:       https://xkpasswd.net/
-Original:       https://github.com/garrett-wood/Public/blob/master/XKCD%20Password%20Generatror/New-SecurePassword.ps1
+Original:       https://github.com/garrett-wood/Public/blob/master/XKCD%20Password%20Generatror/New-xkpasswd.ps1
 
 CHANGELOG
 - VERSION 1.0 - LAST MODIFIED: 2019.02.16
@@ -94,7 +96,7 @@ CHANGELOG
   - Expands the script to have more flexibility and more closely match the version found on XKPASSWD, but implimented entirely in PowerShell
   - Adds the presets from XKPASSWD with matching settings
 #>
-function New-SecurePassword {
+function New-xkpasswd {
     [cmdletBinding(DefaultParameterSetName = 'Default')]
     [OutputType([string])]
     
@@ -153,7 +155,11 @@ function New-SecurePassword {
         [char[]]$PaddingSymbols = @("!","@","$","%","^","&","*","-","_","+","=",":","|","~","?","/",".",";"),
 
         # An array of strings to use as the dictionary
-        [string[]]$Dictionary = $ExampleDictionary
+        [string[]]$Dictionary = $ExampleDictionary,
+
+        # Number of passwords to generate
+        [Parameter()]
+        [int]$Count = 3
     )
     
     begin {
@@ -161,7 +167,7 @@ function New-SecurePassword {
         [String]$PWStructure = ""
         [Int]$MinLength = 0
         [Int]$MaxLength = 0
-        [string]$SecurePassword = ""
+        [string[]]$PasswordArray = $null
 
         # If a preset was selected, set all the details for that preset
         #"AppleID","NTLM","SecurityQ","Web16","Web32","WiFi","XKCD"
@@ -409,103 +415,111 @@ function New-SecurePassword {
         }
         Write-Verbose $VerboseMessage
 
-        # Select a random padding symbol from the provided array
-        if ($PaddingSymbols.Count -gt 1) {
-            $PadSymbol = $PaddingSymbols[(Get-RandomInt -Minimum 0 -Maximum ($PaddingSymbols.Count - 1))]
-        } elseif ($PaddingSymbols.Count -eq 1) {
-            $PadSymbol = $PaddingSymbols[0]
-        } else {
-            $PadSymbol = "-"
-        }
-        
-        # Select a random separator character from the provided array
-        if ($Separator.Count -gt 1) {
-            $SeparatorChar = $Separator[(Get-RandomInt -Minimum 0 -Maximum ($Separator.Count - 1))]
-        } elseif ($Separator.Count -eq 1) {
-            $SeparatorChar = $Separator[0]
-        } else {
-            $SeparatorChar = "-"
-        }
-
-        # Add padding symbols to the beginning of the password, if included
-        if ($FrontPaddingSymbols) {
-            For( $C=1; $C -le $FrontPaddingSymbols; $C++ ) {
-                $SecurePassword += $PadSymbol
+        for ($i = 0; $i -lt $count; $i++) {
+            [string]$SecurePassword = $null
+            # Select a random padding symbol from the provided array
+            if ($PaddingSymbols.Count -gt 1) {
+                $PadSymbol = $PaddingSymbols[(Get-RandomInt -Minimum 0 -Maximum ($PaddingSymbols.Count - 1))]
+            } elseif ($PaddingSymbols.Count -eq 1) {
+                $PadSymbol = $PaddingSymbols[0]
+            } else {
+                $PadSymbol = "-"
             }
-        }
-        # Add padding digits to the beginning of the password, if included
-        if ($FrontPaddingDigits) {
-            For( $C=1; $C -le $FrontPaddingDigits; $C++ ) {
-                $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
+
+            # Select a random separator character from the provided array
+            if ($Separator.Count -gt 1) {
+                $SeparatorChar = $Separator[(Get-RandomInt -Minimum 0 -Maximum ($Separator.Count - 1))]
+            } elseif ($Separator.Count -eq 1) {
+                $SeparatorChar = $Separator[0]
+            } else {
+                $SeparatorChar = "-"
             }
-        }
 
-        # Place a separator between the above and the first word, if included
-        if ($Separator -and $FrontPaddingDigits) {
-            $SecurePassword += $SeparatorChar
-        }
-
-        # Add the words to the password, using the selected transformation, separated by the separator characters, if applicable
-        For( $C=1; $C -le $WordCount; $C++ ) {
-            $CurrentWord = $FilteredDictionary[(Get-RandomInt -Minimum 0 -Maximum ($FilteredDictionary.Count - 1))]
-            If ($Transformations -eq "None") {
-                $SecurePassword += $CurrentWord
-            } elseif ($Transformations -eq "alternatingWORDcase") {
-                if ([bool]!($C % 2)) {
-                    $SecurePassword += $CurrentWord.ToUpper()
-                } else {
-                    $SecurePassword += $CurrentWord.ToLower()
-                }
-            } elseif ($Transformations -eq "CapitaliseFirstLetter") {
-                $SecurePassword += $CurrentWord.Substring(0,1).ToUpper() + $CurrentWord.Substring(1).ToLower()
-            } elseif ($Transformations -eq "cAPITALIZEeVERYlETTERbUTfIRST") {
-                $SecurePassword += $CurrentWord.Substring(0,1).ToLower() + $CurrentWord.Substring(1).ToUpper()
-            } elseif ($Transformations -eq "lowercase") {
-                $SecurePassword += $CurrentWord.ToLower()
-            } elseif ($Transformations -eq "UPPERCASE") {
-                $SecurePassword += $CurrentWord.ToUpper()
-            } elseif ($Transformations -eq "RandomCapitalise") {
-                if ((Get-RandomInt -Minimum 0) % 2) {
-                    $SecurePassword += $CurrentWord.ToUpper()
-                } else {
-                    $SecurePassword += $CurrentWord.ToLower()
+            # Add padding symbols to the beginning of the password, if included
+            if ($FrontPaddingSymbols) {
+                For( $C=1; $C -le $FrontPaddingSymbols; $C++ ) {
+                    $SecurePassword += $PadSymbol
                 }
             }
-            if ($Separator -and $C -lt $WordCount) {
+            # Add padding digits to the beginning of the password, if included
+            if ($FrontPaddingDigits) {
+                For( $C=1; $C -le $FrontPaddingDigits; $C++ ) {
+                    $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
+                }
+            }
+
+            # Place a separator between the above and the first word, if included
+            if ($Separator -and $FrontPaddingDigits) {
                 $SecurePassword += $SeparatorChar
             }
-        }
 
-        # Place a separator between the words and the end padding digits, if applicable
-        if ($Separator -and $EndPaddingDigits) {
-            $SecurePassword += $SeparatorChar
-        }
+            # Add the words to the password, using the selected transformation, separated by the separator characters, if applicable
+            For( $C=1; $C -le $WordCount; $C++ ) {
+                $CurrentWord = $FilteredDictionary[(Get-RandomInt -Minimum 0 -Maximum ($FilteredDictionary.Count - 1))]
+                If ($Transformations -eq "None") {
+                    $SecurePassword += $CurrentWord
+                } elseif ($Transformations -eq "alternatingWORDcase") {
+                    if ([bool]!($C % 2)) {
+                        $SecurePassword += $CurrentWord.ToUpper()
+                    } else {
+                        $SecurePassword += $CurrentWord.ToLower()
+                    }
+                } elseif ($Transformations -eq "CapitaliseFirstLetter") {
+                    $SecurePassword += $CurrentWord.Substring(0,1).ToUpper() + $CurrentWord.Substring(1).ToLower()
+                } elseif ($Transformations -eq "cAPITALIZEeVERYlETTERbUTfIRST") {
+                    $SecurePassword += $CurrentWord.Substring(0,1).ToLower() + $CurrentWord.Substring(1).ToUpper()
+                } elseif ($Transformations -eq "lowercase") {
+                    $SecurePassword += $CurrentWord.ToLower()
+                } elseif ($Transformations -eq "UPPERCASE") {
+                    $SecurePassword += $CurrentWord.ToUpper()
+                } elseif ($Transformations -eq "RandomCapitalise") {
+                    if ((Get-RandomInt -Minimum 0) % 2) {
+                        $SecurePassword += $CurrentWord.ToUpper()
+                    } else {
+                        $SecurePassword += $CurrentWord.ToLower()
+                    }
+                }
+                if ($Separator -and $C -lt $WordCount) {
+                    $SecurePassword += $SeparatorChar
+                }
+            }
 
-        # Add padding digits to the end of the password, if included
-        if ($EndPaddingDigits) {
-            For( $C=1; $C -le $EndPaddingDigits; $C++ ) {
-                $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
+            # Place a separator between the words and the end padding digits, if applicable
+            if ($Separator -and $EndPaddingDigits) {
+                $SecurePassword += $SeparatorChar
             }
-        }
 
-        # Add padding symbols to the end  of the password, if included
-        if ($EndPaddingSymbols -and (-not($AdaptivePaddingLength))) {
-            For( $C=1; $C -le $EndPaddingSymbols; $C++ ) {
-                $SecurePassword += $PadSymbol
+            # Add padding digits to the end of the password, if included
+            if ($EndPaddingDigits) {
+                For( $C=1; $C -le $EndPaddingDigits; $C++ ) {
+                    $SecurePassword += Get-RandomInt -Minimum 0 -Maximum 9
+                }
             }
-        }
-        # If adaptive padding was selected, add the padding symbol to the end until the final length is reached
-        if (($AdaptivePaddingLength) -and ($SecurePassword.Length -lt $AdaptivePaddingLength)) {
-            $SymbolsToAdd = $AdaptivePaddingLength - $SecurePassword.Length
-            For( $C=1; $C -le $SymbolsToAdd; $C++ ) {
-                $SecurePassword += $PadSymbol
+
+            # Add padding symbols to the end  of the password, if included
+            if ($EndPaddingSymbols -and (-not($AdaptivePaddingLength))) {
+                For( $C=1; $C -le $EndPaddingSymbols; $C++ ) {
+                    $SecurePassword += $PadSymbol
+                }
             }
+            # If adaptive padding was selected, add the padding symbol to the end until the final length is reached
+            if (($AdaptivePaddingLength) -and ($SecurePassword.Length -lt $AdaptivePaddingLength)) {
+                $SymbolsToAdd = $AdaptivePaddingLength - $SecurePassword.Length
+                For( $C=1; $C -le $SymbolsToAdd; $C++ ) {
+                    $SecurePassword += $PadSymbol
+                }
+            }
+            $PasswordArray += $SecurePassword
         }
     }
 
     end {
         # Return the generated password
-        Return $SecurePassword
+        if ($Count -eq 1) {
+            return $SecurePassword
+        } else {
+            return $PasswordArray
+        }
     }
 }
 
@@ -559,7 +573,7 @@ function Get-RandomInt {
     process {
         # Check to make sure minimum is less then maximum, then get a random number
         if ($Minimum -lt $Maximum) {
-            $Return = [System.Security.Cryptography.RandomNumberGenerator]::GetInt32($Minimum,$Max)
+            $Return = [System.Security.Cryptography.RandomNumberGenerator]::GetInt32($Minimum,$Maximum)
         } else {
             Write-Warning 'Minimum length must be less than Maximum length'
             return -1

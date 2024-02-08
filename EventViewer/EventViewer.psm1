@@ -162,6 +162,7 @@ function Get-EventLogBitlocker {
     )
     
     begin {
+        $After = Get-Date -Date "2024-01-02 00:00:00"
         $EventLogs =  Get-WinEvent -LogName "Microsoft-Windows-BitLocker/BitLocker Management" -ErrorAction SilentlyContinue
         $EventLogs +=  Get-WinEvent -LogName "Microsoft-Windows-BitLocker/BitLocker Operational" -ErrorAction SilentlyContinue
         $EventLogs +=  Get-WinEvent -LogName "Microsoft-Windows-BitLocker-DrivePreparationTool/Admin" -ErrorAction SilentlyContinue
