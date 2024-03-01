@@ -7,10 +7,10 @@
 
 <#
 .SYNOPSIS
-This function creates random passwords using user defined characteristics. It is inspired by the XKCD 936 comic and the password generator spawned from it, XKPasswd.
+This function creates random passwords using user-defined characteristics. It is inspired by the XKCD 936 comic and the password generator spawned from it, xkpasswd.net.
 
 .DESCRIPTION
-This function uses a dictionary array and the user's input to create a random memorable password. The included example dictionary can be found in the above dot sourced file, and should be named $ExampleDictionary. It can be used to generate passwords for a variety of purposes and can also be used in combination with other functions in order to use a single line password set command. This function can be used without parameters and will generate a password using 3 words between 4 and 8 characters each.
+This function uses a dictionary array and the user's input to create a random memorable password. The module includes an example dictionary, which is imported when the module is loaded, and should be named $ExampleDictionary. It can be used to generate passwords for a variety of purposes and can also be used in combination with other functions to use a single-line password set command. This function can be used without parameters and will generate a password using 3 words between 4 and 8 characters each.
 
 .PARAMETER WordCount
 This parameter is used to set the number of words in the password generated. The full range is between 1 and 24 words. Caution is advised at any count higher than 10
@@ -54,7 +54,7 @@ This parameter is used to set how many symbols are added to the beginning of the
 This parameter is used to set how many symbols are added to the end of the password. Set to 0 to not have any padding symbols.
 
 .PARAMETER PaddingSymbols
-This parameter is used to set an array of symbols to be used to pad the beggining and end of the password. Set to an empty value or $null to not have any padding, or set to just one character to force a particular character.
+This parameter is used to set an array of symbols to be used to pad the beginning and end of the password. Set to an empty value or $null to not have any padding, or set to just one character to force a particular character.
 
 This is the default padding alphabet:
 
@@ -63,7 +63,14 @@ This is the default padding alphabet:
 If an empty array is passed, it will default to a -
 
 .PARAMETER Dictionary
-This parameter is used to define an array of strings that will be used to select the words in the password. It defaults to the $ExampleDictionary array from the dot sourced Dictionary.ps1 file
+Custom dictionaries can be passed as a variable at run time or by updating the variable in `dictionary.ps1`. The default dictionary was created by combining two dictionary lists:
+
+- <https://github.com/garrett-wood/Public/tree/master/XKCD%20Password%20Generatror>
+- <https://github.com/bartificer/xkpasswd-js>
+
+.PARAMETER Count
+
+Specifies the number of passwords to generate
 
 .EXAMPLE
 New-xkpasswd
@@ -87,14 +94,15 @@ This example will generate a password using the WEB16 settings from xkpasswd.net
 RELATED LINKS
 XKCD Comic 936: https://xkcd.com/936/
 XKPasswd:       https://xkpasswd.net/
-Original:       https://github.com/garrett-wood/Public/blob/master/XKCD%20Password%20Generatror/New-xkpasswd.ps1
+Original:       https://github.com/garrett-wood/Public/blob/master/XKCD%20Password%20Generatror/New-SecurePassword.ps1
 
 CHANGELOG
 - VERSION 1.0 - LAST MODIFIED: 2019.02.16
   - Original version from https://www.reddit.com/r/PowerShell/comments/arccbg/update_xkcd_password_generator/
-- VERSION 2.0 - LAST MODIFIED: 2023-12-21
+- VERSION 2.0
   - Expands the script to have more flexibility and more closely match the version found on XKPASSWD, but implimented entirely in PowerShell
   - Adds the presets from XKPASSWD with matching settings
+  - Allows generating multiple passwords
 #>
 function New-xkpasswd {
     [cmdletBinding(DefaultParameterSetName = 'Default')]
@@ -258,28 +266,38 @@ function New-xkpasswd {
         $Settings += "`n`t"
         $Settings += "WORDS: $($WordCount) words between $($MinWordLength) and $($MaxWordLength) letters."
         $Settings += "`n`t"
+        $EntropyCase = 1
+        $Alphabet = 52
         if ($Transformations -eq "None"){
-            $settings += "TRANSFORMATIONS: -none-" 
+            $settings += "TRANSFORMATIONS: -none-"
+            $Alphabet = 26
         } elseif ($Transformations -eq "alternatingWORDcase"){
             $settings += "TRANSFORMATIONS: alternating WORD case"
+            $EntropyCase = 2
         } elseif ($Transformations -eq "CapitaliseFirstLetter"){
-            $settings += "TRANSFORMATIONS: Catitalise First Letter"
+            $settings += "TRANSFORMATIONS: Capitalize First Letter"
         } elseif ($Transformations -eq "cAPITALIZEeVERYlETTERbUTfIRST"){
-            $settings += "TRANSFORMATIONS: cAPITALIASE eVERY lETTER eXCEPT tHE fIRST"
+            $settings += "TRANSFORMATIONS: cAPITALIZE eVERY lETTER eXCEPT tHE fIRST"
         } elseif ($Transformations -eq "lowercase"){
             $settings += "TRANSFORMATIONS: lower case"
+            $Alphabet = 26
         } elseif ($Transformations -eq "UPPERCASE"){
             $settings += "TRANSFORMATIONS: UPPER CASE"
+            $Alphabet = 26
         } elseif ($Transformations -eq "RandomCapitalise"){
-            $settings += "TRANSFORMATIONS: EVERY word randoMly CAPITALISED or NOT"
+            $settings += "TRANSFORMATIONS: EVERY word randomly CAPITALISED or NOT"
+            $EntropyCase = 2
         }
         $Settings += "`n`t"
-        if ($Separator.count -eq 1) {
+        if ($Separator.count -eq 0) {
+            # Don't add Separator
+        } elseif ($Separator.count -eq 1) {
             $Settings += "SEPARATOR: The character [$($Separator)]"
+            $Settings += "`n`t"
         } else {
             $Settings += "SEPARATOR: a character randomly chosen from the set: [$($Separator -join "] [")]"
+            $Settings += "`n`t"
         }
-        $Settings += "`n`t"
         if (($FrontPaddingDigits -eq 0) -and ($EndPaddingDigits -eq 0)) {
             $Settings += "PADDING DIGITS: -none-"
         } elseif (($FrontPaddingDigits -eq 1) -and ($EndPaddingDigits -eq 0)) {
@@ -364,16 +382,19 @@ function New-xkpasswd {
                 $PWStructure += '[P]'
                 $MinLength++
             }
+            $AlphabetSymbols = $true
         }
         if ($FrontPaddingDigits) {
             For( $C=1; $C -le $FrontPaddingDigits; $C++ ) {
                 $PWStructure += '[D]'
                 $MinLength++
             }
+            $AlphabetDigits = $true
         }
         if ($Separator -and $FrontPaddingDigits) {
             $PWStructure += '[S]'
             $MinLength++
+            $AlphabetSymbols = $true
         }
         For( $C=1; $C -le $WordCount; $C++ ) {
             $PWStructure += '[Word]'
@@ -382,28 +403,33 @@ function New-xkpasswd {
             if ($Separator -and $C -lt $WordCount) {
                 $PWStructure += '[S]'
                 $MinLength++
+                $AlphabetSymbols = $true
             }
         }
         if ($Separator -and ($EndPaddingDigits)) {
             $PWStructure += '[S]'
             $MinLength++
+            $AlphabetSymbols = $true
         }
         if ($EndPaddingDigits) {
             For( $C=1; $C -le $EndPaddingDigits; $C++ ) {
                 $PWStructure += '[D]'
                 $MinLength++
             }
+            $AlphabetDigits = $true
         }
         if ($EndPaddingSymbols -and (-not($AdaptivePaddingLength))) {
             For( $C=1; $C -le $EndPaddingSymbols; $C++ ) {
                 $PWStructure += '[P]'
                 $MinLength++
+                $AlphabetSymbols = $true
             }
         }
         if (($AdaptivePaddingLength) -and ($MinLength -lt $AdaptivePaddingLength)) {
             $PWStructure += '[P]...[P]'
             $MinLength = 63
             $MaxLength = 0
+            $AlphabetSymbols = $true
         }
         $MaxLength += $MinLength
         $VerboseMessage = "SUMMARY`n`tSTRUCTURE: $($PWStructure)`n`t"
@@ -413,6 +439,42 @@ function New-xkpasswd {
         } else {
             $VerboseMessage += "between $($MinLength) and $($MaxLength) characters"
         }
+        if ($AlphabetDigits) {
+            $Alphabet += 10
+        }
+        if ($AlphabetSymbols) {
+            $Alphabet += 33
+        }
+        $EntropyNKMin = [math]::log2([math]::pow($Alphabet,$MinLength))
+        $EntropyNKMax = [math]::log2([math]::pow($Alphabet,$MaxLength))
+        # Find the known entropy
+
+        # Find the number of possible words, when the dictionary is known, for a brute force attack.
+        ## Number of words in the filtered dictionary times 2 if we randomize the case
+        $EntropyWords = $FilteredDictionary.Count * $EntropyCase
+
+        $EntropySeen = [math]::pow($EntropyWords,$WordCount)
+
+        if ($Separator) {
+            $EntropySeen = $EntropySeen * $Separator.Count
+        }
+        if ($FrontPaddingSymbols -or $EndPaddingSymbols) {
+            $EntropySeen = $EntropySeen * $PaddingSymbols.Count
+        }
+
+        if ($FrontPaddingDigits -or $EndPaddingDigits) {
+            $EntropySeen = $EntropySeen * [math]::pow(10,$FrontPaddingDigits + $EndPaddingDigits)
+        }
+
+        $EntropySeen = [math]::log2($EntropySeen)
+
+        $VerboseMessage += "`n`tENTROPY: "
+        if ($EntropyNKMin -eq $EntropyNKMax) {
+            $VerboseMessage += "exactly $([math]::Round($EntropyNKMin,2)) bits blind"
+        } else {
+            $VerboseMessage += "between $([math]::Round($EntropyNKMin,2)) bits & $([math]::Round($EntropyNKMax,2)) bits blind"
+        }
+        $VerboseMessage += " & $([math]::Round($EntropySeen,2)) bits with full knowledge (Suggest keeping blind entropy above 78 bits and seen above 52 bits)"
         Write-Verbose $VerboseMessage
 
         for ($i = 0; $i -lt $count; $i++) {
