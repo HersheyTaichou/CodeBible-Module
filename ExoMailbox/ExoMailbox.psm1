@@ -138,7 +138,7 @@ Get Any Outlook Rules to Forward Emails
 Searches each mailbox and returns any rules to forward emails. It will retrieve all forwards by default but can be restricted to external forwards only
 
 .PARAMETER mailboxes
-This takes an array of Get-ExoMailbox results, for when we we only want to check a few users.
+This takes an array of Get-ExoMailbox results, for when we we only want to check a few mbs.
 
 .PARAMETER OnlyExternal
 This will restrict the results to only external recipients.
@@ -150,7 +150,7 @@ DisplayName: Example Rule
 RuleId: 123
 RuleName: Example Rule
 RuleDescription: This is an example rule
-ForwardRecipients: User@domain.com
+ForwardRecipients: mb@domain.com
 
 .NOTES
 General notes
@@ -295,5 +295,57 @@ function Get-MailboxSize {
     
     end {
         return $Return
+    }
+}
+
+function Get-AllMailboxPermissions {
+    [CmdletBinding()]
+    param (
+        # Get a report on all mailboxes
+        [Parameter(ParameterSetName='All',Mandatory=$true)]
+        [switch]
+        $AllMailboxes,
+        # One email address to check
+        [Parameter(ParameterSetName='Single',Mandatory=$true)]
+        [string[]]
+        $Mailbox
+    )
+    
+    begin {
+        if ($AllMailboxes) {
+            $Mailboxes = Get-ExoRecipient -ResultSize:Unlimited
+        } else {
+            $Mailboxes = Get-ExoRecipient -Identity $Mailbox
+        }
+        $mbFolders = @(":\",":\Calendar",":\Contacts")
+        $allmbDetails = @()
+        $Counter=0
+    }
+
+    Process {
+        ForEach ($mb in $Mailboxes) {
+            $Counter++
+            Write-Progress -Id 0 -Activity "Processing User" -PercentComplete (($Counter / $Mailboxes.count) * 100)
+            foreach ($Folder in $mbFolders) {
+                $FolderPerms = Get-EXOMailboxFolderPermission -Identity "$($mb.Identity)$($Folder)" -ErrorAction SilentlyContinue
+                if ($null -ne $FolderPerms) {
+                    $Properties = [ordered]@{
+                        'Identity' = $mb.Identity
+                        'DisplayName' = $mb.DisplayName
+                        'PrimarySmtpAddress' = $mb.PrimarySmtpAddress
+                        'RecipientTypeDetails' = $mb.RecipientTypeDetails
+                        'FolderName' = $Folder.FolderName
+                        'User' = $Folder.User
+                        'AccessRights' = $Folder.AccessRights
+                        'SharingPermissionFlags' = $Folder.SharingPermissionFlags
+                    }
+                    $allmbDetails += New-Object -TypeName PSObject -Property $Properties
+                }
+            }
+        }
+    }
+
+    end {
+        return $allmbDetails
     }
 }
