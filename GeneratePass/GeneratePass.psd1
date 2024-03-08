@@ -72,13 +72,13 @@ NestedModules = @('.\Dictionary.ps1')
 FunctionsToExport = @('New-xkpasswd')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
+CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = '*'
+VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+AliasesToExport = @()
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -88,7 +88,7 @@ ModuleList = @('.\New-xkpasswd.psm1',
                '.\Dictionary.ps1')
 
 # List of all files packaged with this module
-FileList = 'New-xkpasswd.psm1', 'Dictionary.ps1'
+FileList = 'New-xkpasswd.psm1', 'Dictionary.ps1','GeneratePass.psd1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -99,10 +99,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/HersheyTaichou/CodeBible-Module/blob/main/COPYING'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/HersheyTaichou/CodeBible-Module/blob/main/GeneratePass/README.md'
 
         # A URL to an icon representing this module.
         # IconUri = ''
@@ -124,7 +124,7 @@ PrivateData = @{
 } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
-# HelpInfoURI = ''
+HelpInfoURI = 'https://github.com/HersheyTaichou/CodeBible-Module/blob/main/GeneratePass/README.md'
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
 # DefaultCommandPrefix = ''

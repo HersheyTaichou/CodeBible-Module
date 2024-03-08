@@ -325,19 +325,24 @@ function Get-AllMailboxPermissions {
     Process {
         ForEach ($mb in $Mailboxes) {
             $Counter++
-            Write-Progress -Id 0 -Activity "Processing User" -PercentComplete (($Counter / $Mailboxes.count) * 100)
+            Write-Progress -Id 0 -Activity "Gathering Details" -Status "$($mb.DisplayName)" -PercentComplete (($Counter / $Mailboxes.count) * 100)
+            $CounterA = 0
             foreach ($Folder in $mbFolders) {
+                $CounterA++
+                Write-Progress -Id 1 -ParentId 0 -Activity "Checking Folders" -Status "$($Folder)" -PercentComplete (($CounterA / $mbFolders.count) * 100)
                 $FolderPerms = Get-EXOMailboxFolderPermission -Identity "$($mb.Identity)$($Folder)" -ErrorAction SilentlyContinue
                 if ($null -ne $FolderPerms) {
-                    $Properties = [ordered]@{
-                        'Identity' = $mb.Identity
-                        'DisplayName' = $mb.DisplayName
-                        'PrimarySmtpAddress' = $mb.PrimarySmtpAddress
-                        'RecipientTypeDetails' = $mb.RecipientTypeDetails
-                        'FolderName' = $Folder.FolderName
-                        'User' = $Folder.User
-                        'AccessRights' = $Folder.AccessRights
-                        'SharingPermissionFlags' = $Folder.SharingPermissionFlags
+                    foreach ($Permision in $FolderPerms) {
+                        $Properties = [ordered]@{
+                            'Identity' = $mb.Identity;
+                            'DisplayName' = $mb.DisplayName;
+                            'PrimarySmtpAddress' = $mb.PrimarySmtpAddress;
+                            'RecipientTypeDetails' = $mb.RecipientTypeDetails;
+                            'FolderName' = $Permision.FolderName;
+                            'User' = $Permision.User;
+                            'AccessRights' = $Permision.AccessRights -join ";";
+                            'SharingPermissionFlags' = $Permision.SharingPermissionFlags;
+                        }
                     }
                     $allmbDetails += New-Object -TypeName PSObject -Property $Properties
                 }
