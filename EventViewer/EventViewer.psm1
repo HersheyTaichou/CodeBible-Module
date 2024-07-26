@@ -5,7 +5,7 @@ Base Function for Event Log Searches
 .DESCRIPTION
 This function provides a base with the common commands to get an export of logs based on Event IDs
 
-.PARAMETER InstanceID
+.PARAMETER Id
 Array of Event IDs to filter by
 
 .PARAMETER Before
@@ -26,7 +26,7 @@ function Get-FilteredEventLog {
         # Array of Event IDs to filter by
         [Parameter(Mandatory)]
         [Int[]]
-        $InstanceID,
+        $Id,
         # Seach before this date
         [Parameter()]
         [datetime]
@@ -38,25 +38,20 @@ function Get-FilteredEventLog {
     )
     
     begin {
-        $Parameters = @{
-            "InstanceId" = $InstanceID
-            "LogName"    = "Security"
-        }
-        if ($Before) {
-            $Parameters += @{
-                "Before" = $Before
-            }
-        }
-
-        if ($After) {
-            $Parameters += @{
-                "After" = $After
-            }
+        
+        if ($Before -and -not($After)) {
+            $Parameters = { ($_.Id -in $Id) -and ($_.TimeCreated -le $Before) }
+        } elseif ($After -and -not($Before)) {
+            $Parameters = { ($_.Id -in $Id) -and ($_.TimeCreated -ge $After) }
+        } elseif ($After -and $Before) {
+            $Parameters = { ($_.Id -in $Id) -and ($_.TimeCreated -le $Before) -and ($_.TimeCreated -ge $After) }
+        } else {
+            $Parameters = { ($_.Id -in $Id) }
         }
     }
 
     process {
-        $FilteredLogs = Get-EventLog @Parameters
+        $FilteredLogs = Get-WinEvent -LogName Security | Where-Object -FilterScript $Parameters
     }
     
     end {
@@ -124,7 +119,7 @@ function Get-EventLogUserAccountManagement {
     
     begin {
         $Parameters = @{
-            "InstanceId" = @(4720,4722,4723,4724,4725,4726,4738,4740,4765,4766,4767,4780,4781,4794,5376,5377)
+            "Id" = @(4720,4722,4723,4724,4725,4726,4738,4740,4765,4766,4767,4780,4781,4794,5376,5377)
         }
         if ($Before) {
             $Parameters += @{

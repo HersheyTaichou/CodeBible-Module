@@ -524,7 +524,7 @@ function New-xkpasswd {
             $AlphabetSymbols = $true
         }
         $MaxLength += $MinLength
-        $VerboseMessage = "SUMMARY`n`tSTRUCTURE: $($PWStructure)`n`t"
+        $VerboseMessage = "SUMMARY:`n`tSTRUCTURE: $($PWStructure)`n`t"
         $VerboseMessage += "LENGTH: "
         if ($MinLength -eq $MaxLength) {
             $VerboseMessage += "always $($MinLength) characters"
