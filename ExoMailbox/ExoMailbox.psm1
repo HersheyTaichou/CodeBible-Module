@@ -35,7 +35,7 @@ function Get-AllMailboxRules {
                 $Rules = Get-InboxRule -Mailbox $Mailbox.PrimarySmtpAddress
                 if ($Rules) {
                     $CounterB = 0
-                    foreach ($rule in $Rules) {
+                    $Return = foreach ($rule in $Rules) {
                         $ActivityB = "Processing " + $rule.DisplayName
                         $CounterB ++
                         Write-Progress -Id 1 -Activity $ActivityB -PercentComplete (($CounterB / $Rules.count) * 100) -ParentId 0
@@ -118,7 +118,7 @@ function Get-AllMailboxRules {
                             'IsValid' = $Rule.IsValid
                             'ObjectState' = $Rule.ObjectState
                         }
-                        $Return += New-Object -TypeName PSObject -Property $Properties
+                        New-Object -TypeName PSObject -Property $Properties
                     }
                 }
             }
@@ -281,7 +281,7 @@ function Get-MailboxSize {
     
     process {
         
-        foreach ($MB in $Mailboxes) {
+        $Return = foreach ($MB in $Mailboxes) {
             $MbStats = Get-MailboxStatistics -Identity $MB.Id
             $Details = [ordered]@{
                 'DisplayName' = $MB.DisplayName
@@ -289,7 +289,7 @@ function Get-MailboxSize {
                 'Database' = $MB.Database.Name
                 'TotalItemSize' = $MbStats.TotalItemSize
             }
-            $Return += New-Object -TypeName PSObject -Property $Details
+            New-Object -TypeName PSObject -Property $Details
         }
     }
     
@@ -332,7 +332,7 @@ function Get-AllMailboxPermissions {
                 Write-Progress -Id 1 -ParentId 0 -Activity "Checking Folders" -Status "$($Folder)" -PercentComplete (($CounterA / $mbFolders.count) * 100)
                 $FolderPerms = Get-EXOMailboxFolderPermission -Identity "$($mb.Identity)$($Folder)" -ErrorAction SilentlyContinue
                 if ($null -ne $FolderPerms) {
-                    foreach ($Permision in $FolderPerms) {
+                    $allmbDetails = foreach ($Permision in $FolderPerms) {
                         $Properties = [ordered]@{
                             'Identity' = $mb.Identity;
                             'DisplayName' = $mb.DisplayName;
@@ -344,7 +344,7 @@ function Get-AllMailboxPermissions {
                             'SharingPermissionFlags' = $Permision.SharingPermissionFlags;
                         }
                     }
-                    $allmbDetails += New-Object -TypeName PSObject -Property $Properties
+                    New-Object -TypeName PSObject -Property $Properties
                 }
             }
         }

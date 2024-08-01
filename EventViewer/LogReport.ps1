@@ -1,11 +1,8 @@
-$LogDetails = @()
-$logInOut = @()
-
 $InstanceID = "4624","4625","4634","4647","4648","4779"
 
 $WinEvent = Get-WinEvent -Path .\WinEvent.evtx | Where-Object {($_.Id -in $InstanceID) -and ($_.TimeCreated -ge $((Get-Date).AddDays(-30)))}
 
-foreach ($e in $WinEvent) {
+$LogDetails = foreach ($e in $WinEvent) {
     # UserId will vary depending on event type:
     if (($e.Id -eq 4624) ) {
         $UserId = $e.properties[5].value
@@ -30,10 +27,10 @@ foreach ($e in $WinEvent) {
         'LogonID' = $LogonID
         'Id' = $e.Id
     }
-    $LogDetails += New-Object -TypeName PSObject -Property $Properties
+    New-Object -TypeName PSObject -Property $Properties
 }
 
-foreach ($Log in ($LogDetails | Where-Object {$_.UserId -ne "System" -and $_.Id -ne 4634 -and $_.Id -ne 4647})) {
+$logInOut = foreach ($Log in ($LogDetails | Where-Object {$_.UserId -ne "System" -and $_.Id -ne 4634 -and $_.Id -ne 4647})) {
     if ($Log.Id -eq 4624) {
         $LogonTime = $Log.TimeCreated
         $LogoutTime = ($LogDetails | Where-Object {($_.Id -eq 4634 -or $_.Id -eq 4647) -and ($_.LogonID -eq $log.LogonID)}).TimeCreated
@@ -50,5 +47,5 @@ foreach ($Log in ($LogDetails | Where-Object {$_.UserId -ne "System" -and $_.Id 
         'LogoutTime' = $LogoutTime
         'Id' = $Log.Id
     }
-    $logInOut += New-Object -TypeName PSObject -Property $Properties
+    New-Object -TypeName PSObject -Property $Properties
 }
