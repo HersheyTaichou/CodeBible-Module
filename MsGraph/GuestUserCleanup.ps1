@@ -40,12 +40,12 @@ function Remove-OldGuestUsers {
         $TenantId,
         # Live cleanup mode
         [Parameter()]
-        [bool]
-        $Cleanup
+        [switch]
+        $Remove
     )
     
     begin {
-        Connect-MgGraph -Scopes "User.ReadWrite.All" -TenantId $TenantId
+        Connect-MgGraph -Scopes "User.ReadWrite.All" -TenantId $TenantId -NoWelcome
         if ($Age -gt 0) {
             $Age = 0 - $Age
         } elseif ($Age -lt 0){
@@ -59,15 +59,18 @@ function Remove-OldGuestUsers {
     process {
         $Guests = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "guest" -and $_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
         $Guests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType | Export-Csv 'Guest-User-Cleanup.csv'
-        if ($Cleanup) {
+        if ($Remove) {
+            $Counter = 1
             $Guests | ForEach-Object {
+                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $Guests.Count) * 100)
                 Remove-MgUser -UserId $_.Id
+                $Counter++
             }
         } else {
             $Guests | ForEach-Object {
-                Remove-MgUser -UserId $_.Id -WhatIf
+                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $Guests.Count) * 100)
+                Update-MgUser -UserId $_.Id -AccountEnabled $false
             }
         }
     }
-
 }
