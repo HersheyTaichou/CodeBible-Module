@@ -57,20 +57,23 @@ function Remove-OldGuestUsers {
     }
     
     process {
-        $Guests = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "guest" -and $_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
-        $Guests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType | Export-Csv 'Guest-User-Cleanup.csv'
+        $Guests = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "Guest"}
+        Write-Verbose "Number of guest accounts: $($Guests.Count)"
+        $RemoveGuests = $Guests | Where-Object {$_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
+        Write-Verbose "Number of guest accounts to remove: $($RemoveGuests.Count)"
+        $Counter = 1
         if ($Remove) {
-            $Counter = 1
-            $Guests | ForEach-Object {
-                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $Guests.Count) * 100)
+            $Return = $RemoveGuests | ForEach-Object {
+                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $RemoveGuests.Count) * 100)
                 Remove-MgUser -UserId $_.Id
                 $Counter++
             }
         } else {
-            $Guests | ForEach-Object {
-                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $Guests.Count) * 100)
-                Update-MgUser -UserId $_.Id -AccountEnabled $false
-            }
+            $RemoveGuests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType | Export-Csv "Guest-User-Cleanup-$(Get-Date -Format "yyyy-MM-dd").csv"
         }
+    }
+
+    end {
+        return $Return
     }
 }
