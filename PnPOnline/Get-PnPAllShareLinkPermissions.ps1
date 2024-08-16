@@ -35,7 +35,8 @@ function Get-PnPAllShareLinkPermissions {
     
     begin {
         Write-Verbose "Please login to Office 365 with a SharePoint admin account."
-        $Connection = Connect-PnPOnline -TenantAdminUrl $TenantAdminUrl -Url $TenantAdminUrl -Interactive -ReturnConnection
+        #$Connection = Get-PnPOnlineConnection -Url $Url -TenantAdminUrl $TenantAdminUrl
+        $Connection = Connect-PnPOnline -TenantAdminUrl $TenantAdminUrl -Url $Url -Interactive -ReturnConnection
         if ($MinimumSize) {
             $Sites = Get-PnPTenantSite -Connection $Connection | Where-Object {$_.StorageUsageCurrent -ge $MinimumSize}
         } else {

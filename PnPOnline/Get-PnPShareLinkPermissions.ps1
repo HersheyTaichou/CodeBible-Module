@@ -5,8 +5,11 @@ Get all share link permissions for a site
 .DESCRIPTION
 This script takes a SharePoint site url and returns all of the permissions for all the lists in that site
 
-.PARAMETER SiteUrl
+.PARAMETER Url
 The URL of the SharePoint site to gather permissions from
+
+.PARAMETER TenantAdminUrl
+The URL of the SharePoint admin site. Typically in the format of https://domain-admin.sharepoint.com/
 
 .EXAMPLE
 An example
@@ -31,8 +34,9 @@ function Get-PnPShareLinkPermissions {
     
     begin {
         #Connect to PnP Online
-        $Connection = Connect-PnPOnline -Url $Url -Interactive -ReturnConnection
-        # $Ctx = Get-PnPContext
+        #$Connection = Get-PnPOnlineConnection -Url $Url -TenantAdminUrl $TenantAdminUrl
+        $Connection = Connect-PnPOnline -TenantAdminUrl $TenantAdminUrl -Url $Url -Interactive -ReturnConnection
+        Get-PnPContext -Connection $Connection | Out-Null
         $ShareLinks = 0
     }
     
@@ -41,7 +45,7 @@ function Get-PnPShareLinkPermissions {
         $lists = Get-PnPList -Connection $Connection | Where-Object {$_.ItemCount -gt 0 -and $_.BaseType -eq "DocumentLibrary"}
         $CounterA = 1
         $Results = foreach ($List in $Lists) {
-            Write-Progress -PercentComplete ($CounterA / $Lists.Count * 100) -Activity "Reviewing list: '$($List.Title)'" -Status "Processing List $CounterA of $($Lists.Count)" -Id 1
+            Write-Progress -PercentComplete ($CounterA / $Lists.Count * 100) -Activity "Reviewing list: '$($List.Title)'" -Status "Processing List $CounterA of $($Lists.Count)" -Id 1 -ParentId 0
             Write-Verbose "`tList: $($List.Title)"
             #Get all list items in batches
             $ListItems = Get-PnPListItem -List $List -PageSize 2000 -Connection $Connection
@@ -55,7 +59,7 @@ function Get-PnPShareLinkPermissions {
                 #Get Users and Assigned permissions
                 $RoleAssignments = Get-PnPProperty -ClientObject $Item -Property RoleAssignments -Connection $Connection
                 # Add the member details to $RoleAssignments
-                $RoleAssignments | ForEach-Object {Get-PnPProperty -ClientObject $_ -Property RoleDefinitionBindings, Member}
+                $RoleAssignments | ForEach-Object {Get-PnPProperty -ClientObject $_ -Property RoleDefinitionBindings, Member -Connection $Connection}
                 $CounterC = 1
                 # Iterate through each $RoleAssignment sharing link
                 ForEach($RoleAssignment in $RoleAssignments | Where-Object {$_.Member.Title -like "SharingLinks*"}) {
