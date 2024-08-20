@@ -69,7 +69,7 @@ RequiredModules = @('ExchangeOnlineManagement')
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Get-AllMailboxRules','Get-ForwardRules','Get-MailboxSize','Get-AllMailboxPermissions')
+FunctionsToExport = @('Get-AllMailboxRules','Get-ForwardRules','Get-MailboxSize','Get-AllMailboxPermissions','Get-NestedDistributionGroupMembers')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -98,10 +98,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/HersheyTaichou/CodeBible-Module/blob/main/COPYING'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/HersheyTaichou/CodeBible-Module/tree/main'
 
         # A URL to an icon representing this module.
         # IconUri = ''
