@@ -310,3 +310,19 @@ New-xkpasswd -Preset Web16
 
 This example will generate a password using the Web16 preset
 ```
+
+## Dictionary.ps1
+
+This file contains two arrays. The first array is a list of words to be used as the dictionary when generating passwords. The second array is a count of words, based on the number of letters in each word. The following script can be used to generate the array. It should then be included in the dictionary file.
+
+```powershell
+$Run = 1
+$DictCounts = do {
+    $Count = ($ExampleDictionary | where-object {($_.Length -eq $Run)}).Count
+    $Count
+    $Run++
+} while ($count -gt 0)
+
+```
+
+This script should be run and the saved array updated every time the dictionary array is changed.
