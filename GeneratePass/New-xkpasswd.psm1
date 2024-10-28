@@ -454,7 +454,7 @@ function New-xkpasswd {
         6. Select padding symbols
         #>
 
-        # Filter the dictionary down to just the words that fit within the selected length
+        <# Filter the dictionary down to just the words that fit within the selected length
         if ($MinWordLength -le $MaxWordLength) {
             if (($MinWordLength -lt 24) -and $MaxWordLength -lt 24){
                 [string[]]$FilteredDictionary = $Dictionary | Where-Object {($_.Length -ge $MinWordLength) -and ($_.Length -le $MaxWordLength)}
@@ -464,9 +464,11 @@ function New-xkpasswd {
         } else {
             Write-Warning "Minimum word length is greater than maximum word length."
             return
-        }
+        }#>
 
-        Write-Verbose "Dictionary contains $($Dictionary.Count) words, which was filtered to $($FilteredDictionary.Count) potential words."
+        $FilteredCount = ($dictCounts[$($MinWordLength-1)..$($MaxWordLength-1)] | Measure-Object -Sum).Sum
+        Write-Verbose "Dictionary contains $($Dictionary.Count) words, which was filtered to $FilteredCount potential words."
+        
 
         # Display password structure and length
         if ($FrontPaddingSymbols) {
@@ -543,7 +545,7 @@ function New-xkpasswd {
 
         # Find the number of possible words, when the dictionary is known, for a brute force attack.
         ## Number of words in the filtered dictionary times 2 if we randomize the case
-        $EntropyWords = $FilteredDictionary.Count * $EntropyCase
+        $EntropyWords = $Dictionary.Count * $EntropyCase
 
         $EntropySeen = [math]::pow($EntropyWords,$WordCount)
 
@@ -609,7 +611,15 @@ function New-xkpasswd {
 
             # Add the words to the password, using the selected transformation, separated by the separator characters, if applicable
             For( $C=1; $C -le $WordCount; $C++ ) {
-                $CurrentWord = $FilteredDictionary[(Get-RandomInt -Minimum 0 -Maximum ($FilteredDictionary.Count - 1))]
+                #$CurrentWord = $FilteredDictionary[(Get-RandomInt -Minimum 0 -Maximum ($FilteredDictionary.Count - 1))]
+
+                do {
+                    $Index = Get-RandomInt -Minimum 0 -Maximum ($Dictionary.Count - 1)
+                    $CurrentWord = $Dictionary[$Index]
+                } until (
+                    ($CurrentWord.Length -ge $MinWordLength) -and ($CurrentWord.Length -le $MaxWordLength)
+                )
+
                 If ($Transformations -eq "None") {
                     $SecurePassword += $CurrentWord
                 } elseif ($Transformations -eq "alternatingWORDcase") {
