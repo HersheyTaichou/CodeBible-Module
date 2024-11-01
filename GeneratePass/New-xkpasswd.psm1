@@ -196,6 +196,8 @@ CHANGELOG
   - Adds the presets from XKPASSWD with matching settings
   - Allows generating multiple passwords
   - Adds entropy details for the password generated
+- Version 2.1
+  - Changes how words are selected from the array to speed up password generation
 #>
 function New-xkpasswd {
     [cmdletBinding(DefaultParameterSetName = 'Default')]
