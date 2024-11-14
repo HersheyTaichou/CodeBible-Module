@@ -1,6 +1,6 @@
 # Exchange Online Mailbox Functions
 
-These functions automate tasks related to gathering details from Exchagne Online mailboxes.
+These functions automate tasks related to gathering details from Exchange Online mailboxes.
 
 Before you can run any of these commands, you will need to import the module
 
