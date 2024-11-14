@@ -28,14 +28,14 @@ function Get-AllMailboxRules {
     }
     
     process {
-        foreach ($Mailbox in $AllMailboxes) {
+        $Return = foreach ($Mailbox in $AllMailboxes) {
                 $CounterA ++
                 $ActivityA = "Processing " + $Mailbox.DisplayName
                 Write-Progress -Id 0 -Activity $ActivityA -PercentComplete (($CounterA / $AllMailboxes.count) * 100)
                 $Rules = Get-InboxRule -Mailbox $Mailbox.PrimarySmtpAddress
                 if ($Rules) {
                     $CounterB = 0
-                    $Return = foreach ($rule in $Rules) {
+                    foreach ($rule in $Rules) {
                         $ActivityB = "Processing " + $rule.DisplayName
                         $CounterB ++
                         Write-Progress -Id 1 -Activity $ActivityB -PercentComplete (($CounterB / $Rules.count) * 100) -ParentId 0
@@ -186,14 +186,15 @@ function Get-ForwardRules {
             Write-Error $Message
             return
         }
-        foreach ($mailbox in $mailboxes) {
+        $RuleArray = foreach ($mailbox in $mailboxes) {
             $i ++
             Write-Progress -id 0 -Activity "Checking rules for $($mailbox.DisplayName)" -Status "Progress:" -PercentComplete (($i/$mailboxes.count) * 100)
             $forwardingRules = $null
             Write-Verbose "Checking rules for $($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress)"
             $rules = get-inboxrule -Mailbox $mailbox.primarysmtpaddress
-             
+            Write-Verbose "$($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress) has $($rules.count) rules"
             $forwardingRules = $rules | Where-Object {$_.forwardto -or $_.forwardasattachmentto}
+            Write-Verbose "$($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress) has $($forwardingRules.count) forwarding rules"
             $ii = 0
             foreach ($rule in $forwardingRules) {
                 $ii ++
@@ -227,7 +228,7 @@ function Get-ForwardRules {
                         RuleDescription    = $rule.Description
                         ForwardRecipients = $FwdRecString
                     }
-                    $RuleArray += $ruleHash
+                    $ruleHash
                 }
             }
         }
