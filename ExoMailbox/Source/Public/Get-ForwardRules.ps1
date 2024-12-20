@@ -38,9 +38,9 @@ function Get-ForwardRules {
     )
     
     begin {
+        $Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $RuleArray = @()
         $i = 0
-        # Import-Module -Name ExchangeOnlineManagement
     }
     
     process {
@@ -50,45 +50,34 @@ function Get-ForwardRules {
             $AcceptedDomain = (Get-AcceptedDomain)
         }
         catch [Exception] {
-            $Message = "Unable to determine the accepted domains. You must call Connect-ExchangeOnline before calling any other cmdlet."
-            Write-Error $Message
-            return
+            Write-Error "Unable to determine the accepted domains. You must call Connect-ExchangeOnline before calling any other cmdlet."
+            throw $_
         }
         $RuleArray = foreach ($mailbox in $mailboxes) {
             $i ++
-            Write-Progress -id 0 -Activity "Checking rules for $($mailbox.DisplayName)" -Status "Progress:" -PercentComplete (($i/$mailboxes.count) * 100)
-            $forwardingRules = $null
-            Write-Verbose "Checking rules for $($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress)"
-            $rules = get-inboxrule -Mailbox $mailbox.primarysmtpaddress
-            Write-Verbose "$($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress) has $($rules.count) rules"
-            $forwardingRules = $rules | Where-Object {$_.forwardto -or $_.forwardasattachmentto}
-            Write-Verbose "$($mailbox.DisplayName) - $($mailbox.PrimarySmtpAddress) has $($forwardingRules.count) forwarding rules"
+            Write-Progress -Id 0 -Activity "Checking rules for $($mailbox.DisplayName)" -Status "Progress:" -PercentComplete (($i/$mailboxes.count) * 100)
+            Write-Verbose "Checking rules for $($mailbox.DisplayName)"
+            $forwardingRules = Get-InboxRule -Mailbox $mailbox.primarysmtpaddress | Where-Object {$_.forwardto -or $_.forwardasattachmentto}
             $ii = 0
             foreach ($rule in $forwardingRules) {
                 $ii ++
-                Write-Progress -id 1 -Activity "Checking Forward rules for $($mailbox.DisplayName)" -Status "Progress:" -PercentComplete (($ii/$forwardingRules.count) * 100)
+                Write-Progress -Id 1 -Activity "Checking Forward rules for $($mailbox.DisplayName)" -Status "Progress:" -PercentComplete (($ii/$forwardingRules.count) * 100) -ParentId 0
                 [array]$recipients = $rule.ForwardTo | Where-Object {$_ -match "SMTP"}
                 $recipients += $rule.ForwardAsAttachmentTo | Where-Object {$_ -match "SMTP"}
-             
-                $FwdRecipients = @()
-         
-                foreach ($recipient in $recipients) {
+                $FwdRecipients = foreach ($recipient in $recipients) {
                     $email = ($recipient -split "SMTP:")[1].Trim("]")
                     $domain = ($email -split "@")[1]
-        
                     if (($AcceptedDomain.DomainName -notcontains $domain) -and $OnlyExternal) {
-                        $FwdRecipients += $email
+                        $email
                     } else {
-                        $FwdRecipients += $email
+                        $email
                     }
                 }
 
                 if ($FwdRecipients) {
                     $FwdRecString = $FwdRecipients -join ", "
                     Write-Warning "$($rule.Name) forwards to $FwdRecString"
-
-                    $ruleHash = $null
-                    $ruleHash = [ordered]@{
+                    [ordered]@{
                         PrimarySmtpAddress = $mailbox.PrimarySmtpAddress
                         DisplayName        = $mailbox.DisplayName
                         RuleId             = $rule.Identity
@@ -96,13 +85,14 @@ function Get-ForwardRules {
                         RuleDescription    = $rule.Description
                         ForwardRecipients = $FwdRecString
                     }
-                    $ruleHash
                 }
             }
         }
     }
     
     end {
+        $Stopwatch.Stop
+        Write-Verbose "Total time elapsed: $([math]::Round($stopwatch.Elapsed.TotalSeconds,0)) seconds"
         return $RuleArray
     }
 }
