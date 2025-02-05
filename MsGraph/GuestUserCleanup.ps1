@@ -11,7 +11,7 @@ The age of the accounts to delete. Can be passed as a positive or negative integ
 .PARAMETER TenantId
 The ID for the Microsoft Tenant
 
-.PARAMETER Cleanup
+.PARAMETER Remove
 This is a switch to enable live delete mode. Otherwise it defaults to -WhatIf mode. 
 
 .EXAMPLE
@@ -53,23 +53,34 @@ function Remove-OldGuestUsers {
         } else {
             Write-Error "Age variable is 0. Check the value and try again"
             exit
+            Read-Host -Prompt "Enter a negative number of days, any guest accounts that have not signed in for that number of days will be disabled"
         }
     }
     
     process {
-        $Guests = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "Guest"}
-        Write-Verbose "Number of guest accounts: $($Guests.Count)"
-        $RemoveGuests = $Guests | Where-Object {$_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
-        Write-Verbose "Number of guest accounts to remove: $($RemoveGuests.Count)"
-        $Counter = 1
-        if ($Remove) {
-            $Return = $RemoveGuests | ForEach-Object {
-                Write-Progress -Activity $_.UserPrincipalName -PercentComplete (($Counter / $RemoveGuests.Count) * 100)
-                Remove-MgUser -UserId $_.Id
+        $GuestUsers = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "Guest"}
+        Write-Verbose "Number of guest accounts: $($GuestUsers.Count)"
+        $CleanupGuests = $GuestUsers | Where-Object {$_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
+        Write-Verbose "Number of guest accounts to cleanup: $($CleanupGuests.Count)"
+        $DeleteGuests = $CleanupGuests | where-object {$_.AccountEnabled -eq $false}
+        Write-Verbose "Number of guest accounts to remove: $($DeleteGuests.Count)"
+        $DisableGuests = $CleanupGuests | where-object {$_.AccountEnabled -eq $true}
+        Write-Verbose "Number of guest accounts to disable: $($DisableGuests.Count)"
+        $Return = if ($Remove) {
+            $Counter = 1
+            foreach ($Guest in $DeleteGuests) {
+                Write-Progress -Activity "Deleting User" -Status $Guest.UserPrincipalName -PercentComplete (($Counter / $DeleteGuests.Count) * 100)
+                Remove-MgUser -UserId $Guest.Id
+                $Counter++
+            }
+            $Counter = 1
+            foreach ($Guest in $DisableGuests) {
+                Write-Progress -Activity "Disabling User" -Status $Guest.UserPrincipalName -PercentComplete (($Counter / $DisableGuests.Count) * 100)
+                Update-MgUser -UserId $Guest.Id -AccountEnabled:$false
                 $Counter++
             }
         } else {
-            $RemoveGuests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType | Export-Csv "Guest-User-Cleanup-$(Get-Date -Format "yyyy-MM-dd").csv"
+            $CleanupGuests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType #| Export-Csv "Guest-User-Cleanup-$(Get-Date -Format "yyyy-MM-dd").csv"
         }
     }
 

@@ -77,7 +77,7 @@ function Get-ForwardRules {
                 if ($FwdRecipients) {
                     $FwdRecString = $FwdRecipients -join ", "
                     Write-Warning "$($rule.Name) forwards to $FwdRecString"
-                    [ordered]@{
+                    New-Object -TypeName PSObject -Property [ordered]@{
                         PrimarySmtpAddress = $mailbox.PrimarySmtpAddress
                         DisplayName        = $mailbox.DisplayName
                         RuleId             = $rule.Identity
@@ -89,7 +89,7 @@ function Get-ForwardRules {
             }
         }
     }
-    
+
     end {
         $Stopwatch.Stop
         Write-Verbose "Total time elapsed: $([math]::Round($stopwatch.Elapsed.TotalSeconds,0)) seconds"
