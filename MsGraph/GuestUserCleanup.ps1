@@ -60,27 +60,29 @@ function Remove-OldGuestUsers {
     process {
         $GuestUsers = Get-MgBetaUser -all -Select SignInActivity | Where-Object {$_.UserType -eq "Guest"}
         Write-Verbose "Number of guest accounts: $($GuestUsers.Count)"
-        $CleanupGuests = $GuestUsers | Where-Object {$_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)}
+        $CleanupGuests = $GuestUsers | Where-Object {$_.CreatedDateTime -le (Get-Date).AddDays($Age) -and $_.SignInActivity.LastSuccessfulSignInDateTime -le (Get-Date).AddDays($Age)} | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType,Result
         Write-Verbose "Number of guest accounts to cleanup: $($CleanupGuests.Count)"
         $DeleteGuests = $CleanupGuests | where-object {$_.AccountEnabled -eq $false}
         Write-Verbose "Number of guest accounts to remove: $($DeleteGuests.Count)"
         $DisableGuests = $CleanupGuests | where-object {$_.AccountEnabled -eq $true}
         Write-Verbose "Number of guest accounts to disable: $($DisableGuests.Count)"
-        $Return = if ($Remove) {
-            $Counter = 1
-            foreach ($Guest in $DeleteGuests) {
-                Write-Progress -Activity "Deleting User" -Status $Guest.UserPrincipalName -PercentComplete (($Counter / $DeleteGuests.Count) * 100)
+        $Return = foreach ($Guest in $DeleteGuests) {
+            $DeleteCounter++
+            Write-Progress -Activity "Deleting User" -Status $Guest.UserPrincipalName -PercentComplete (($DeleteCounter / $DeleteGuests.Count) * 100)
+            $Guest.Result = "Deleted"
+            if ($Remove) {
                 Remove-MgUser -UserId $Guest.Id
-                $Counter++
             }
-            $Counter = 1
-            foreach ($Guest in $DisableGuests) {
-                Write-Progress -Activity "Disabling User" -Status $Guest.UserPrincipalName -PercentComplete (($Counter / $DisableGuests.Count) * 100)
+            $Guest
+        }
+        $Return += foreach ($Guest in $DisableGuests) {
+            $DisableCounter++
+            Write-Progress -Activity "Disabling User" -Status $Guest.UserPrincipalName -PercentComplete (($DisableCounter / $DisableGuests.Count) * 100)
+            $Guest.Result = "Disabled"
+            if ($Remove) {
                 Update-MgUser -UserId $Guest.Id -AccountEnabled:$false
-                $Counter++
             }
-        } else {
-            $CleanupGuests | Select-Object -ExpandProperty SignInActivity AccountEnabled,CreatedDateTime,CreationType,DisplayName,ExternalUserState,ExternalUserStateChangeDateTime,Id,Mail,MailNickname,SecurityIdentifier,SignInSessionsValidFromDateTime,UserPrincipalName,UserType #| Export-Csv "Guest-User-Cleanup-$(Get-Date -Format "yyyy-MM-dd").csv"
+            $Guest
         }
     }
 
