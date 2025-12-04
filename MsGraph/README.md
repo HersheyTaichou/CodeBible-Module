@@ -22,6 +22,12 @@ $TenantId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 Connect-MgGraph -Scopes "User.ReadWrite.All" -TenantId $TenantId -NoWelcome
 ```
 
+and import the file:
+
+```PowerShell
+Import-Module .\Remove-OldGuestUsers.ps1
+```
+
 ## Parameters
 
 ### PARAMETER Age
