@@ -17,6 +17,8 @@ Install-Module Microsoft.Graph.Beta
 Then you will need to connect:
 
 ```PowerShell
+$TenantId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
 Connect-MgGraph -Scopes "User.ReadWrite.All" -TenantId $TenantId -NoWelcome
 ```
 
