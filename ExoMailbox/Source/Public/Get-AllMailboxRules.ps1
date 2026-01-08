@@ -13,11 +13,16 @@ General notes
 #>
 function Get-AllMailboxRules {
     [CmdletBinding()]
-    param ()
+    param (
+        # Get all the mailboxes, unless we specify only a few
+        [Parameter()]
+        [array]
+        $mailboxes = $(Get-ExoMailbox -ResultSize Unlimited)
+    )
     
     begin {
         try {
-            $AllMailboxes = Get-EXOMailbox -ResultSize Unlimited
+            $AllMailboxes = $mailboxes
         }
         catch {
             throw $_

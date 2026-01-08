@@ -2,6 +2,10 @@
 
 This function creates random passwords using user-defined characteristics. It is inspired by the XKCD 936 comic and the password generator spawned from it, xkpasswd.net.
 
+## **MOVED**
+
+This module was moved to a dedicated repository, and can be found on github at [orion.xkpasswd](https://github.com/HersheyTaichou/orion.xkpasswd)
+
 ## DESCRIPTION
 
 This function uses a dictionary array and the user's input to create a random memorable password. The module includes an example dictionary, which is imported when the module is loaded, and should be named $ExampleDictionary. It can be used to generate passwords for a variety of purposes and can also be used in combination with other functions to use a single-line password set command. This function can be used without parameters and will generate a password using 3 words between 4 and 8 characters each.
